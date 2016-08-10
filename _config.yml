@@ -1,10 +1,10 @@
 # Site settings
-title:       Off the convex path
-email:       offconvex@mrtz.org 
-author:      Moritz Hardt
-description: "Algorithms off the convex path."
+title:       Victoria Uni machine learning research group (insert witty title)
+email:       marcus.frean@ecs.vuw.ac.nz 
+author:      Marcus Frean
+description: "Deeplearning at Vic. The happs, the peeps, ..."
 baseurl:     ""
-url:         "http://offconvex.github.io"
+url:         "http://festivalofdoubt.github.io"
 date_format: "%b %-d, %Y"
 
 # Google services
@@ -21,7 +21,7 @@ future: true
 
 # Disqus post comments
 # (leave blank to disable Disqus)
-disqus_shortname: offconvex
+disqus_shortname: 
 
 # Facebook Comments plugin
 # (leave blank to disable Facebook Comments, otherwise set it to true)
