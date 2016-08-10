@@ -1,62 +1,195 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Off the convex path</title>
-    <description>Algorithms off the convex path.</description>
-    <link>http://offconvex.github.io/</link>
-    <atom:link href="http://offconvex.github.io/feed.xml" rel="self" type="application/rss+xml" />
+    <title>Victoria Uni machine learning research group (insert witty title)</title>
+    <description>Deeplearning at Vic. The happs, the peeps, ...</description>
+    <link>http://festivalofdoubt.github.io/</link>
+    <atom:link href="http://festivalofdoubt.github.io/feed.xml" rel="self" type="application/rss+xml" />
     
      
       <item>
-        <title>Nature, Dynamical Systems and Optimization</title>
-        <description>&lt;p&gt;The language of dynamical systems is the preferred choice of scientists to model a wide variety of phenomena in nature. The reason is  that, often, it is easy to  &lt;em&gt;locally&lt;/em&gt; observe or understand what happens to a system in one time-step. Could we then piece this local information together to make deductions about the  &lt;em&gt;global&lt;/em&gt; behavior of these dynamical systems? The hope is to understand some of nature’s algorithms and, in this quest, unveil new algorithmic techniques. In this first of a series of posts, we give a gentle introduction to dynamical systems and explain what it means to view them from the point of view of optimization.&lt;/p&gt;
+        <title>Stability as a foundation of machine learning</title>
+        <description>&lt;p&gt;Central to machine learning is our ability to relate how a learning algorithm fares on a sample to its performance on unseen instances. This is called &lt;em&gt;generalization&lt;/em&gt;.&lt;/p&gt;
 
-&lt;h2 id=&quot;dynamical-systems-and-the-fate-of-trajectories&quot;&gt;Dynamical Systems and the Fate of Trajectories&lt;/h2&gt;
-&lt;p&gt;Given a system whose state at time $t$ takes a value $x(t)$ from a domain $\Omega,$ a dynamical system over $\Omega$ is a function $f$ that describes how this state evolves: one can write the update as 
-[ \frac{dx(t)}{dt} = f(x(t))    \ \ \  \mathrm{or} \ \ \ x(t+1)=x(t) + f(x(t))] 
- in continuous or discrete time respectively. In other words, $f$ describes  what happens  in one unit of time to each point in the domain $\Omega.$ Classically, to study a dynamical system is to study  the eventual fate of its &lt;em&gt;trajectories&lt;/em&gt;, i.e., the paths traced by successive states of the system starting from a given state. For this question to make sense, $f$ must not take any state out of the domain. However,  a priori, there is nothing to say that $x(t)$ remains in $\Omega$ beyond $x(0).$  This is the problem of  &lt;em&gt;global existence&lt;/em&gt; of trajectories and can sometimes be quite hard  to establish. Assuming that the dynamical system at hand has a solution for all times   for all starting points, and $\Omega$ is compact, the trajectories either tend to  &lt;em&gt;fixed points&lt;/em&gt;, &lt;em&gt;limit cycles&lt;/em&gt; or end up in  &lt;em&gt;chaos&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;In this post, I will describe a purely algorithmic approach to generalization. The property that makes this possible is &lt;em&gt;stability&lt;/em&gt;. An algorithm is &lt;em&gt;stable&lt;/em&gt;, intuitively speaking, if its output doesn’t change much if we perturb the input sample in a single point. We will see that this property by itself is necessary and sufficient for generalization.&lt;/p&gt;
 
-&lt;p style=&quot;text-align:center;&quot;&gt;
-&lt;img src=&quot;/assets/trajectories.jpg&quot; alt=&quot;The fate of trajectories&quot; /&gt;
-&lt;/p&gt;
+&lt;h2 id=&quot;example-stability-of-the-perceptron-algorithm&quot;&gt;Example: Stability of the Perceptron algorithm&lt;/h2&gt;
 
-&lt;p&gt;A fixed point of a dynamical system, as the name suggests, is a state $x \in \Omega$ which does not change on the application of $f$, i.e.,  $f(x)=0.$  A  fixed point is said to be &lt;em&gt;stable&lt;/em&gt; if trajectories starting at &lt;em&gt;all&lt;/em&gt; nearby points eventually converge to it and &lt;em&gt;unstable&lt;/em&gt; otherwise. Stability is a property that one might expect to find in nature. Limit cycles are closed trajectories with a similar notion of stability/unstability, while limits of trajectories which are neither fixed points or limit cycles are (loosely) termed as chaos.&lt;/p&gt;
+&lt;p&gt;Before we jump into the formal details, let’s consider a simple example of a stable algorithm: The &lt;a href=&quot;https://en.wikipedia.org/wiki/Perceptron&quot;&gt;Perceptron&lt;/a&gt;, aka stochastic gradient descent for learning linear separators! The algorithm aims to separate two classes of points (here circles and triangles) with a linear separator. The algorithm starts with an arbitrary hyperplane. It then repeatedly selects a single example from its input set and updates its hyperplane using the gradient of a certain loss function on the chosen example. How bad might the algorithm screw up if we move around a single example? Let’s find out.&lt;/p&gt;
 
-&lt;h2 id=&quot;what-do-dynamical-systems-optimize&quot;&gt;What do Dynamical Systems Optimize?&lt;/h2&gt;
+&lt;p&gt;&lt;!-- begin animation --&gt;&lt;/p&gt;
+&lt;div style=&quot;text-align:center;&quot;&gt;
+   &lt;img id=&quot;imganim&quot; src=&quot;/assets/sgd/00.png&quot; onclick=&quot;forward_image()&quot; /&gt;
+   &lt;p style=&quot;text-align:center;&quot;&gt;&lt;em&gt;Step &lt;span style=&quot;font-family:monospace;&quot;&gt;&lt;span id=&quot;counter&quot;&gt;1&lt;/span&gt;/30&lt;/span&gt;. Click to advance.&lt;br /&gt; The animation shows two runs of the Perceptron algorithm for learning a linear separator on two data sets that differ in the one point marked green in one data set and purple in the other. The perturbation is indicated by an arrow. The shaded green region shows the difference in the resulting two hyperplanes after some number of steps. &lt;/em&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;//&lt;![CDATA[
+  var images = [
+  &quot;/assets/sgd/00.png&quot;,
+  &quot;/assets/sgd/01.png&quot;,
+  &quot;/assets/sgd/02.png&quot;,
+  &quot;/assets/sgd/03.png&quot;,
+  &quot;/assets/sgd/04.png&quot;,
+  &quot;/assets/sgd/05.png&quot;,
+  &quot;/assets/sgd/06.png&quot;,
+  &quot;/assets/sgd/07.png&quot;,
+  &quot;/assets/sgd/08.png&quot;,
+  &quot;/assets/sgd/09.png&quot;,
+  &quot;/assets/sgd/10.png&quot;,
+  &quot;/assets/sgd/11.png&quot;,
+  &quot;/assets/sgd/12.png&quot;,
+  &quot;/assets/sgd/13.png&quot;,
+  &quot;/assets/sgd/14.png&quot;,
+  &quot;/assets/sgd/15.png&quot;,
+  &quot;/assets/sgd/16.png&quot;,
+  &quot;/assets/sgd/17.png&quot;,
+  &quot;/assets/sgd/18.png&quot;,
+  &quot;/assets/sgd/19.png&quot;,
+  &quot;/assets/sgd/20.png&quot;, 
+  &quot;/assets/sgd/21.png&quot;,
+  &quot;/assets/sgd/22.png&quot;,
+  &quot;/assets/sgd/23.png&quot;,
+  &quot;/assets/sgd/24.png&quot;,
+  &quot;/assets/sgd/25.png&quot;,
+  &quot;/assets/sgd/26.png&quot;,
+  &quot;/assets/sgd/27.png&quot;,
+  &quot;/assets/sgd/28.png&quot;,
+  &quot;/assets/sgd/29.png&quot; ]
+  var i = 0
+  function forward_image(){
+   i = i + 1;
+   document.getElementById(&#39;imganim&#39;).src = images[i%30];
+   document.getElementById(&#39;counter&#39;).textContent = (i%30) + 1;
+  }
+  //]]&gt; 
+  &lt;/script&gt;
 
-&lt;p&gt;For now, we will consider the class of dynamical systems which only have fixed points, possibly many. In this setting, one can define a function $F$ which maps an  $x \in \Omega$  to its limit under the repeated application of $f.$ Note that to make this function well-defined we might have to look at the closure of $\Omega.$  This brings us to  the following broad,  admittedly not well-defined and widely open question that we would like to study:&lt;/p&gt;
+&lt;p&gt;&lt;!-- end animation --&gt;&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;Given a dynamical system $(\Omega,f)$, what is  $F$?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;As we can see by clicking impatiently through the example, the algorithm seems pretty stable. Even if we substantially move the first example it encounters, the hyperplane computed by the algorithm changes only slightly. Neat. (You can check out the code &lt;a href=&quot;https://gist.github.com/mrtzh/266c37d3a274376134a6&quot;&gt;here&lt;/a&gt;.)&lt;/p&gt;
+
+&lt;h2 id=&quot;empirical-risk-jargon&quot;&gt;Empirical risk jargon&lt;/h2&gt;
+
+&lt;p&gt;Let’s introduce some terminology to relate the behavior of an algorithm on a sample to its behavior on unseen instances. Imagine we have a sample $S=(z_1,\dots,z_n)$ drawn i.i.d. from some unknown distribution $D$. There’s a learning algorithm $A(S)$ that takes $S$ and produces some model (e.g., the hyperplane in the above picture). To quantify the quality of the model we crank out a &lt;em&gt;loss function&lt;/em&gt; $\ell$ with the idea that $\ell(A(S), z)$ describes the &lt;em&gt;loss&lt;/em&gt; of the model $A(S)$ on one instance $z$. The &lt;em&gt;empirical risk&lt;/em&gt; or &lt;em&gt;training error&lt;/em&gt; of the algorithm is defined as:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;R_S = \frac1n \sum_{i=1}^n \ell(A(S), z_i)&lt;/script&gt;
+
+&lt;p&gt;This captures the average loss of the algorithm on the sample on which it was trained. To quantify &lt;em&gt;out-of-sample&lt;/em&gt; performance, we define the &lt;em&gt;risk&lt;/em&gt; of the algorithm as:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;R = \mathop{\mathbb{E}}_{z\sim D}\left[ \ell(A(S), z) \right]&lt;/script&gt;
+
+&lt;p&gt;The difference between risk and empirical risk $R - R_S$ is called &lt;em&gt;generalization error&lt;/em&gt;. You will sometimes encounter that term as a synonym for risk, but I find that confusing. We already have a perfectly short and good name for the risk $R$. Always keep in mind the following tautology&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;R = R_S + (R-R_S).&lt;/script&gt;
+
+&lt;p&gt;Operationally, it states that if we manage to minimize empirical risk all that matters is generalization error.&lt;/p&gt;
+
+&lt;h2 id=&quot;a-fundamental-theorem-of-machine-learning&quot;&gt;A fundamental theorem of machine learning&lt;/h2&gt;
+
+&lt;p&gt;I probably shouldn’t propose fundamental theorems for anything really. But if I had to, this would be the one I’d suggest for machine learning:&lt;/p&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;When $f$ happens to be the negative gradient of  a convex function $g$ over some convex domain $\Omega,$ the dynamical system $(\Omega,f)$ is nothing but an implementation of gradient descent to find the minimum of $g$, answering our question perfectly.&lt;/p&gt;
+  &lt;p&gt;In expectation, generalization equals stability.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;However, in many cases, $f$ may not be a gradient system and understanding what $f$ optimizes may be quite difficult. The fact that there may be multiple  fixed-points necessarily means that trajectories starting at different points  may converge to different points in the domain– giving us a sense of non-convexity. In such cases, answering our question can be a daunting task and, currently, there is no general theory for it. We present two dynamical systems from nature – one easy and one not 	quite.&lt;/p&gt;
+&lt;p&gt;Somewhat more formally, we will encounter a natural measure of stability, denoted $\Delta$ such that the difference between risk and empirical risk in expectation equals $\Delta.$ Formally,&lt;/p&gt;
 
-&lt;h2 id=&quot;evolution-and-the-largest-eigenvector&quot;&gt;Evolution and the Largest Eigenvector&lt;/h2&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;$\mathbb{E}[R - R_S] = \Delta$&lt;/p&gt;
+&lt;/blockquote&gt;
 
-&lt;p&gt;As a simple but important example, consider a population consisting of $n$-types which is subject to the forces of evolution and held at a constant size, say one unit  of mass. Thus, if we let $x_i(t)$ denote the fraction of type $i$ at time $t$ in the population, the domain becomes 
-$\Delta^n=\{x \in \mathbb{R}^n_{&amp;gt;0}: x \geq 0 \; \mathrm{and} \; \; \sum_i x_i=1 \},$  the unit simplex. 
-The update  function is&lt;br /&gt;
-[ f(x)= Qx - \Vert Qx \Vert_1 \cdot x ]
-for a positive matrix  $Q \in \mathbb{R}_{&amp;gt;0}^{n \times n}.$ 
-The properties of a natural environment in which the population is evolving can be captured by a matrix $Q,$  see this &lt;a href=&quot;https://books.google.ch/books?id=YXrIRDuAbE0C&amp;amp;hl=en&quot;&gt;textbook&lt;/a&gt; which is dedicated to the study of such dynamical systems. Mathematically, to start with, note that $f$ maps any point in the simplex to a point in the simplex.  Thus, starting at any point in $\Delta^n,$ the trajectory remains in $\Delta^n.$ What are the fixed points of $f$? These are vectors $x \in \Delta^n$ such that $Qx=\Vert Qx \Vert_1 \cdot x$ or the eigenvectors of $Q.$ Since $Q&amp;gt;0,$ the &lt;a href=&quot;https://en.wikipedia.org/wiki/Perron%E2%80%93Frobenius_theorem&quot;&gt;Perron-Frobenius theorem&lt;/a&gt;  tells us that $Q$ has unique  eigenvector $v \in \Delta^n$ and, starting at any $x(0) \in \Delta^n,$ $x(t) \rightarrow v$ as $t \rightarrow \infty.$ Thus, in this case, simple linear algebra can allow us to deduce that $f$ has exactly one fixed point and, thus, we can answer what is $f$ achieving globally: $f$ is nothing but nature’s implementation of the &lt;a href=&quot;https://en.wikipedia.org/wiki/Power_iteration&quot;&gt;Power Method&lt;/a&gt; to compute the maximum eigenvector of $Q$! Biologically, the  corresponding eigenvalue can be shown to be the &lt;em&gt;average fitness&lt;/em&gt; of the population which is what nature is trying to maximize. It may be worthwhile to note that the maximum eigenvalue problem is non-convex as such.&lt;/p&gt;
+&lt;p&gt;Deferring the exact definition of $\Delta$ to the proof, let’s think about this for a second.
+What I find so remarkable about this theorem is that it turns a statistical problem into a purely algorithmic one: All we need for generalization is an algorithmic notion of robustness. Our algorithm’s output shouldn’t change much if perturb one of the data points. It’s almost like a sanity check. Had you coded up an algorithm and this wasn’t the case, you’d probably go look for a bug.&lt;/p&gt;
 
-&lt;h2 id=&quot;solving-linear-programs-by-molds&quot;&gt;Solving Linear Programs by Molds?&lt;/h2&gt;
+&lt;h3 id=&quot;proof&quot;&gt;Proof&lt;/h3&gt;
 
-&lt;p&gt;Let us conclude with an interesting dynamical system inspired by the inner workings of a &lt;a href=&quot;https://www.youtube.com/watch?v=czk4xgdhdY4&quot;&gt;slime mold&lt;/a&gt;; see &lt;a href=&quot;http://link.springer.com/chapter/10.1007%2F978-3-642-30870-3_35&quot;&gt;here&lt;/a&gt; for a discussion on how this class of dynamics was discovered. Suppose $A \in \mathbb{R}^{n \times m}$ is a matrix and $b \in \mathbb{R}^n$ is a vector. The domain is the positive orthant $\Omega = \{x \in \mathbb{R}{^m}: x&amp;gt;0 \}.$ For a point $x \in \mathbb{R}^m,$ let $X$ denote the diagonal matrix such that $X_{ii}=x_i.$  The evolution function  is then:
-[ \frac{dx}{dt} = X ( A^\top (AXA^\top)^{-1} b - \vec{1}), ]
-where $\vec{1}$ is the vector of all ones.  Now the problem of existence of a solution is neither trivial nor can be ignored as, for the dynamical system to make sense, $x$ has to be positive. Further, it can be argued in a formal sense that this dynamical system is not a gradient descent. What then can we say about the trajectories of this dynamical system? As it turns out, it can be &lt;a href=&quot;http://arxiv.org/abs/1511.07020&quot;&gt;shown&lt;/a&gt; that starting at any $x&amp;gt;0,$ the dynamical system is a gradient descent on a natural Riemannian manifold and converges to a unique point among the solutions to the following linear program,
-[ \min \; \sum_i x_i \ \ \  \mathrm{s.t.} \ \ \ Ax=b, \ \ x \geq 0, ] 
-which gives us a new algorithm for linear programming. We will explain how in a subsequent post.&lt;/p&gt;
+&lt;p&gt;Consider two data sets of size $n$ drawn independently of each other:
+[
+S = (z_1,\dots,z_n), \qquad S’=(z_1’,\dots,z_n’)
+]
+The idea of taking such a &lt;em&gt;ghost sample&lt;/em&gt; $S’$ is quite old and already arises in the context of &lt;em&gt;symmetrization&lt;/em&gt; in empirical process theory.
+We’re going to couple these two samples in one point by defining
+[
+S^i = (z_1,\dots,z_{i-1},z_i’,z_{i+1},\dots,z_n),\qquad i = 1,\dots, n.
+]
+It’s certainly no coincidence that $S$ and $S^i$ differ in exactly one element. We’re going to use this in just a moment.&lt;/p&gt;
+
+&lt;p&gt;By definition, the &lt;em&gt;expected empirical risk&lt;/em&gt; equals&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbb{E}[R_S] = \mathbb{E}\left[ \frac1n \sum_{i=1}^n \ell(A(S), z_i) \right].&lt;/script&gt;
+
+&lt;p&gt;Contrasting this to how the algorithm fares on unseen examples, we can rewrite the &lt;em&gt;expected risk&lt;/em&gt; using our ghost sample as:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbb{E}[R] = \mathbb{E}\left[ \frac1n \sum_{i=1}^n \ell(A(S), \color{red}{z_i&#39;}) \right]&lt;/script&gt;
+
+&lt;p&gt;All expectations we encounter are over both $S$ and $S’$. By linearity of expectation, the difference between expected risk and expected empirical risk equals&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbb{E}[R - R_S] 
+= \frac1n \sum_{i=1}^n 
+\mathbb{E}\left[\ell(A(S), \color{red}{z_i&#39;})-\ell(A(S), z_i)\right].&lt;/script&gt;
+
+&lt;p&gt;It is tempting now to relate the two terms inside the expectation to the stability of the algorithm. We’re going to do exactly that using mathematics’ most trusted proof strategy: &lt;em&gt;pattern matching&lt;/em&gt;. Indeed, since $z_i$ and $z_i’$ are exchangeable, we have&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbb{E}[\ell(A(S), z_i)] 
+= \mathbb{E}[\ell(A(S^i), z_i&#39;)]
+= \mathbb{E}[\ell(A(S), z_i&#39;)] - \delta_i,&lt;/script&gt;
+
+&lt;p&gt;where $\delta_i$ is defined to make the second equality true:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\delta_i = \mathbb{E}[\ell(A(\color{red}S), z_i&#39;)- \ell(A(\color{red}{S^i}), z_i&#39;)]&lt;/script&gt;
+
+&lt;p&gt;Summing up $\Delta = (1/n)\sum_i \delta_i$, we have&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\mathbb{E}[ R - R_S ] = \Delta.&lt;/script&gt;
+
+&lt;p&gt;The only thing left to do is to interpret the right hand side in terms of stability. Convince yourself that $\delta_i$ measures how differently the algorithm behaves on two data sets $S$ and $S’$ that differ in only one element.&lt;/p&gt;
+
+&lt;h3 id=&quot;uniform-stability&quot;&gt;Uniform stability&lt;/h3&gt;
+
+&lt;p&gt;It can be difficult to analyze the expectation in the definition of $\Delta$ precisely. Fortunately, it is often enough to resolve the expectation by upper bounding it with suprema:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;|\Delta| \le \sup_{S,S&#39;} \sup_{z} \left|\ell(A(S),z)-\ell(A(S&#39;),z)\right|.&lt;/script&gt;
+
+&lt;p&gt;The supremum runs over all valid data sets differing in only one element and all valid sample points $z$. This stronger notion of stability called &lt;em&gt;uniform stability&lt;/em&gt; 
+goes back to a seminal paper by Bousquett and Elisseeff.&lt;/p&gt;
+
+&lt;p&gt;I should say that you can find the above proof in the essssential stability paper by Shalev-Shwartz, Shamir, Srebro and Sridharan &lt;a href=&quot;http://jmlr.csail.mit.edu/papers/volume11/shalev-shwartz10a/shalev-shwartz10a.pdf&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;concentration-from-stability&quot;&gt;Concentration from stability&lt;/h3&gt;
+
+&lt;p&gt;The theorem we saw shows that &lt;em&gt;expected&lt;/em&gt; empirical risk equals risk up to a correction that involves the stability of the algorithm. Can we also show that empirical risk is close to its expectation with high probability? Interestingly, we can by appealing to stability once again. I won’t spell out the details, but we can use the &lt;a href=&quot;https://en.wikipedia.org/wiki/Doob_martingale#McDiarmid.27s_inequality&quot;&gt;method of bounded differences&lt;/a&gt; to obtain strong concentration bounds. To apply the method we need a &lt;em&gt;bounded difference&lt;/em&gt; condition which is just another word for &lt;em&gt;stability&lt;/em&gt;. So, we’re really killing two birds with one stone by using stability not only to show that the first moment of the empirical risk is correct but also that it concentrates. The only wrinkle is that, as far as I know, the weak stability notion expressed by $\Delta$ is not enough to get concentration, but uniform stability (for sufficiently small difference) will do.&lt;/p&gt;
+
+&lt;h2 id=&quot;applications-of-stability&quot;&gt;Applications of stability&lt;/h2&gt;
+
+&lt;p&gt;There is much more that stability can do for us. We’ve only scratched on the surface. Here are some of the many applications of stability.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;a href=&quot;http://www.jmlr.org/papers/volume2/bousquet02a/bousquet02a.pdf&quot;&gt;Regularization implies stability&lt;/a&gt;. Specifically, the minimizer of the empirical risk subject to an $\ell_2$-penalty is uniformly stable.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;a href=&quot;http://arxiv.org/abs/1509.01240&quot;&gt;Stochastic gradient descent is stable&lt;/a&gt; provided that we don’t make too many steps.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Differential privacy is nothing but a strong stability guarantee. Any result ever proved about differential privacy is fundamentally about stability.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Differential privacy in turn has applications to preventing overfitting in &lt;a href=&quot;http://blog.mrtz.org/2015/12/14/adaptive-data-analysis.html&quot;&gt;adaptive data analysis&lt;/a&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Stability also has many beautiful applications and connections in statistics. I strongly encourage you to read Bin Yu’s beautiful &lt;a href=&quot;https://www.stat.berkeley.edu/~binyu/ps/papers2013/Yu13.pdf&quot;&gt;overview paper&lt;/a&gt; on the topic.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Looking ahead, I’ve got at least two more posts planned on this.&lt;/p&gt;
+
+&lt;p&gt;In my next post I will go into the stability of stochastic gradient descent in detail. We will see a simple argument to show that stochastic gradient descent is uniformly stable. I will then work towards applying these ideas to the area of deep learning. We will see that stability can help us explain why even huge models sometimes generalize well and how we can make them generalize even better.&lt;/p&gt;
+
+&lt;p&gt;In a second post I will reflect on stability as a paradigm for reliable machine learning. The focus will be on how ideas from stability can help avoid overfitting and false discovery.&lt;/p&gt;
 </description>
-        <pubDate>Sun, 20 Dec 2015 02:09:00 -0800</pubDate>
-        <link>http://offconvex.github.io/2015/12/20/dynamical-systems-1/</link>
-        <guid isPermaLink="true">http://offconvex.github.io/2015/12/20/dynamical-systems-1/</guid>
+        <pubDate>Mon, 14 Mar 2016 21:00:00 +1300</pubDate>
+        <link>http://festivalofdoubt.github.io/2016/03/14/stability/</link>
+        <guid isPermaLink="true">http://festivalofdoubt.github.io/2016/03/14/stability/</guid>
       </item>
-     
-    
      
     
      
@@ -197,177 +330,9 @@ Input: tensor $T = \sum_{i=1}^r \lambda_i \vec x_i \otimes \vec y_i \otimes \vec
 
 &lt;p&gt;Recent research focuses on two problems: how to formulate other learning problems as tensor decompositions, and how to compute tensor decompositions under weaker assumptions. Using tensor decompositions, we can learn more models that include &lt;a href=&quot;http://arxiv.org/abs/1302.2684&quot;&gt;community models&lt;/a&gt;, &lt;a href=&quot;http://www.cs.columbia.edu/~mcollins/papers/uai2014-long.pdf&quot;&gt;probabilistic Context-Free-Grammars&lt;/a&gt;, &lt;a href=&quot;http://arxiv.org/abs/1503.00424&quot;&gt;mixture of general Gaussians&lt;/a&gt; and &lt;a href=&quot;http://newport.eecs.uci.edu/anandkumar/pubs/NN_GeneralizationBound.pdf&quot;&gt;two-layer neural networks&lt;/a&gt;. We can also efficiently compute tensor decompositions when the &lt;em&gt;rank&lt;/em&gt; of the tensor is much larger than the dimension (see for example the papers by &lt;a href=&quot;http://arxiv.org/abs/1311.3651&quot;&gt;Bhaskara et al. 2014&lt;/a&gt;, &lt;a href=&quot;http://arxiv.org/abs/1306.5825&quot;&gt;Goyal et al. 2014&lt;/a&gt;, &lt;a href=&quot;http://arxiv.org/abs/1504.05287&quot;&gt;Ge and Ma 2015&lt;/a&gt;). There are many other interesting works and open problems, and the list here is by no means complete.&lt;/p&gt;
 </description>
-        <pubDate>Thu, 17 Dec 2015 07:00:00 -0800</pubDate>
-        <link>http://offconvex.github.io/2015/12/17/tensor-decompositions/</link>
-        <guid isPermaLink="true">http://offconvex.github.io/2015/12/17/tensor-decompositions/</guid>
-      </item>
-     
-    
-     
-      <item>
-        <title>Semantic Word Embeddings</title>
-        <description>&lt;p&gt;This post can be seen as an introduction to how nonconvex problems arise
-naturally in practice, and also the relative ease with which they are often
-solved.&lt;/p&gt;
-
-&lt;p&gt;I will talk about &lt;em&gt;word embeddings&lt;/em&gt;, a geometric way to capture
-the “meaning” of a word via a low-dimensional vector. They are useful in
-many tasks in Information Retrieval (IR) and Natural Language Processing
-(NLP), such as answering search queries or translating from one
-language to another.&lt;/p&gt;
-
-&lt;p&gt;You may wonder: how can a 300-dimensional vector capture the many
-nuances of word meaning? And what the heck does it mean to “capture meaning?”&lt;/p&gt;
-
-&lt;h2 id=&quot;properties-of-word-embeddings&quot;&gt;Properties of Word Embeddings&lt;/h2&gt;
-&lt;p&gt;A simple property of embeddings obtained by all the methods I’ll
-describe is &lt;em&gt;cosine similarity&lt;/em&gt;: the  &lt;em&gt;similarity&lt;/em&gt; between two words 
-(as rated by humans on a $[-1,1]$ scale) correlates with the &lt;em&gt;cosine&lt;/em&gt;
-of the angle between their vectors. To 
-give an example, the cosine for &lt;em&gt;milk&lt;/em&gt; and
-&lt;em&gt;cow&lt;/em&gt; may be $0.6$, whereas for &lt;em&gt;milk&lt;/em&gt; and
-&lt;em&gt;stone&lt;/em&gt; it may be $0.2$, which is roughly the similarity
-human subjects assign to them.&lt;/p&gt;
-
-&lt;p&gt;A more interesting property of recent embeddings is that they can solve
-&lt;em&gt;analogy&lt;/em&gt; relationships via linear algebra.
-For example, the word analogy question
-&lt;em&gt;man : woman ::king : ??&lt;/em&gt; can be solved by looking for the
-word $w$ such that $v_{king} - v_w$ is most similar to
-$v_{man} - v_{woman}$; in other words, minimizes&lt;/p&gt;
-
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;||v_w - v_{king} + v_{man} - v_{woman}||^2.&lt;/script&gt;
-
-&lt;p&gt;This simple idea can solve $75\%$ of analogy questions on some standard testbed. Note that the method is completely unsupervised: it constructs the embeddings using a big (unannotated) text corpus; and receives &lt;em&gt;no training&lt;/em&gt; specific to analogy solving). 
-Here is a rendering of this linear algebraic relationship between &lt;em&gt;masculine-feminine&lt;/em&gt; pairs.&lt;/p&gt;
-
-&lt;div style=&quot;text-align:center;&quot;&gt;
-&lt;img src=&quot;/assets/analogy-small.jpg&quot; style=&quot;width:400px;&quot; /&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Good embeddings have other properties that will be covered in a future
-post. (Also, I can’t resist mentioning  that fMRI-imaging of the brain suggests that word embeddings are related to how the human brain
-encodes meaning; see the &lt;a href=&quot;http://www.cs.cmu.edu/~tom/pubs/science2008.pdf&quot;&gt;well-known paper of Mitchell et al.&lt;/a&gt;.)&lt;/p&gt;
-
-&lt;h2 id=&quot;computing-word-embeddings-via-firths-hypothesis&quot;&gt;Computing Word embeddings (via Firth’s Hypothesis)&lt;/h2&gt;
-
-&lt;p&gt;In all methods, the word vector is a succinct representation of the &lt;em&gt;distribution&lt;/em&gt; of other words around this word. That this suffices to capture meaning is asserted by &lt;a href=&quot;https://en.wikipedia.org/wiki/Distributional_semantics&quot;&gt;&lt;em&gt;Firth’s hypothesis&lt;/em&gt;&lt;/a&gt;
-from 1957, “&lt;em&gt;You shall know a word by the company it keeps.&lt;/em&gt;”  To give an example, if I
-ask you to think of a word that tends to co-occur with &lt;em&gt;cow,
-drink, babies, calcium&lt;/em&gt;, you would immediately answer:
-&lt;em&gt;milk&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Note that we don’t believe Firth’s hypothesis fully accounts
-for all aspects of semantics —understanding new metaphors or jokes, for example,
-seems to require other modes of experiencing the real world than simply reading text.&lt;/p&gt;
-
-&lt;p&gt;But Firth’s hypothesis does imply a very simple 
-word embedding, albeit a very high-dimensional one.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&lt;em&gt;Embedding 1&lt;/em&gt;: Suppose the dictionary has $N$ distinct words (in practice, $N =100,000$). Take a very large text corpus (e.g., Wikipedia) and let $Count_5(w_1, w_2)$ be the number of times $w_1$ and $w_2$ occur within a distance $5$ of each other in the corpus. Then the word embedding for a word $w$ is a vector of dimension $N$, with one coordinate for each dictionary word. The coordinate corresponding to word $w_2$ is $Count_5(w, w_2)$. (Variants of this method involve considering cooccurence of $w$ with various phrases or $n$-tuples.)&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;The obvious problem with Embedding 1 is that it uses
-extremely high-dimensional vectors. How can we compress them?&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&lt;em&gt;Embedding 2&lt;/em&gt;: Do dimension reduction by taking the rank-300
-singular value decomposition (SVD) of the above vectors.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Recall that for an $N \times N$ matrix $M$ this means finding vectors
-$v_1, v_2, \ldots, v_N \in \mathbb{R}^{300}$ that minimize&lt;/p&gt;
-
-&lt;script type=&quot;math/tex; mode=display&quot;&gt;\sum_{ij} (M_{ij} - v_i \cdot v_j)^2 \qquad (1).&lt;/script&gt;
-
-&lt;p&gt;Using SVD to do dimension reduction seems an obvious idea these days but it
-actually is not. After all,  it is unclear &lt;em&gt;a priori&lt;/em&gt; why the
-above $N \times N$ matrix of cooccurance counts should be close to a
-rank-300 matrix. That this is the case was empirically discovered in the paper on
-&lt;a href=&quot;http://lsa.colorado.edu/papers/JASIS.lsi.90.pdf&quot;&gt;&lt;em&gt;Latent Semantic Indexing&lt;/em&gt; or LSI&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Empirically, the method can be improved by replacing the counts by their logarithm, as in &lt;a href=&quot;http://lsa.colorado.edu/papers/plato/plato.annote.html&quot;&gt;Latent Semantic Analysis or LSA&lt;/a&gt;. Other authors claim  square root
-is even better than logarithm.  Another interesting empirical fact in the LSA paper is that dimension reduction via SVD not only compresses the embedding but &lt;em&gt;improves&lt;/em&gt; its quality. (Improvement via compression is a familiar phenomenon in machine learning.) In fact they can use word vectors to solve word similarity tasks as well as the average American high schooler.&lt;/p&gt;
-
-&lt;p&gt;A research area called &lt;em&gt;Vector Space Models&lt;/em&gt; (see &lt;a href=&quot;https://www.jair.org/media/2934/live-2934-4846-jair.pdf&quot;&gt;survey by Turney and Pantel&lt;/a&gt;) studies various modifications of the above idea. Embeddings are also known to improve if we reweight the various terms in the above expression (2): popular reweightings include TF-IDF, PMI, Logarithm, etc.&lt;/p&gt;
-
-&lt;p&gt;Let me point out that reweighting the
-$(i, j)$ term in expression (1) leads to a &lt;em&gt;weighted&lt;/em&gt;
-version of SVD, which is NP-hard. (I always emphasize to my students
-that a polynomial-time algorithm to compute rank-k  SVD is a miracle, since 
-modifying the problem
-statement in small ways makes it NP-hard.) But in practice, weighted SVD can be
-solved on a laptop in less than a day —remember, $N$ is rather large, about $10^5$!—
-by simple gradient descent on the objective (1), possibly also using
-a regularizer. (Of course,  &lt;a href=&quot;http://blog.mrtz.org/2013/09/07/the-zen-of-gradient-descent.html&quot;&gt;a lot has been proven about such gradient descent methods in context of convex optimization&lt;/a&gt;; the surprise is that they work also in such nonconvex settings.) Weighted SVD is a subcase of &lt;em&gt;Matrix Factorization&lt;/em&gt; approaches in machine learning, which we will also encounter again in upcoming posts.&lt;/p&gt;
-
-&lt;p&gt;But returning to word embeddings, the following question had not been
-raised or debated, to the best of my knowledge: &lt;em&gt;What property of human language explains the
-fact that these very high-dimensional matrices derived (in a nonlinear way) from word cooccurences
-are close to low-rank matrices?&lt;/em&gt; (In a future blog
-post I will describe our new &lt;a href=&quot;http://arxiv.org/abs/1502.03520&quot;&gt;theoretical explanation&lt;/a&gt;.)&lt;/p&gt;
-
-&lt;p&gt;The third embedding method I wish to describe uses 
-&lt;em&gt;energy-based models&lt;/em&gt;, for instance the
-&lt;a href=&quot;https://code.google.com/p/word2vec/&quot;&gt;&lt;strong&gt;Word2Vec&lt;/strong&gt; family of methods&lt;/a&gt; from 2013 by the Google team of Mikolov et al., which also created a buzz due to the above-mentioned linear algebraic method to solve word analogy tasks.
-The &lt;strong&gt;word2vec&lt;/strong&gt; models are inspired by pre-existing neural net models for language
-(basically, the word embedding corresponds to the neural net’s internal representation of the word; see &lt;a href=&quot;http://colah.github.io/posts/2014-07-NLP-RNNs-Representations/&quot;&gt;this blog&lt;/a&gt;.).  Let me
-describe the simplest variant, which assumes that the word
-vectors are related to word probabilities as follows:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;&lt;em&gt;Embedding 3&lt;/em&gt; (&lt;strong&gt;Word2Vec(CBOW)&lt;/strong&gt;):&lt;/p&gt;
-
-  &lt;script type=&quot;math/tex; mode=display&quot;&gt;\textstyle\Pr[w|w_1, w_2, \ldots, w_5] \propto \exp(v_w \cdot (\frac{1}{5} \sum_i v_{w_i})),\qquad (2)&lt;/script&gt;
-
-  &lt;p&gt;where the left hand side gives the empirical probability that word $w$ occurs in the text
-conditional on the last five words being $w_1$ through $w_5$.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Assume we can estimate the left hand side using a large text corpus. Then expression (2) for the word vectors—together with  a constraint capping the dimension of the
-vectors to, say, 300 — implicitly defines a nonconvex optimization problem which is solved in practice as follows. Let $S$ be the set of all the $6$-tuples of words that occur in the text. Let $N$ be a set of random $6$-tuples; this set is called the 
-&lt;em&gt;negative sample&lt;/em&gt; since presumably these tuples are gibberish. The method consists of finding word embeddings that give high probability to 
-tuples in $S$ and low probability to tuples in $N$. Roughly speaking, they maximise the &lt;em&gt;difference&lt;/em&gt; between the following two quantities: (i) sum of $\exp(v_w \cdot (\frac{1}{5} \sum_i v_{w_i}))$ (suitably scaled) over all $6$-tuples in $S$, and
-(ii) the corresponding sum over tuples in $N$.  The &lt;strong&gt;word2vec&lt;/strong&gt; team introduced some other tweaks that allowed them to solve this optimization for very large corpora containing 10 billion words.&lt;/p&gt;
-
-&lt;p&gt;The &lt;strong&gt;word2vec&lt;/strong&gt; papers are a bit mysterious, and have motivated much
-followup work. A paper by Levy and Goldberg (See &lt;a href=&quot;https://levyomer.wordpress.com/&quot;&gt;Omer Levy’s Blog&lt;/a&gt;) explains that the &lt;strong&gt;word2vec&lt;/strong&gt;
-methods are actually modern versions of older vector space methods.
-After all, if you take logs of both sides of expression (2), you see
-that the &lt;em&gt;logarithm&lt;/em&gt; of some cooccurence probability is
-being expressed in terms of inner products of some word vectors, which
-is very much in the spirit of the older work. (Levy and Goldberg have more to say about this, backed up by interesting experiments comparing the vectors obtained by various approaches.)&lt;/p&gt;
-
-&lt;p&gt;Another paper by Pennington et al. at Stanford suggests a &lt;a href=&quot;http://nlp.stanford.edu/projects/glove/&quot;&gt;model called GLOVE&lt;/a&gt;
-that uses an explicit weighted-SVD strategy for finding word embeddings.
-They also give an intuitive explanation of why these embeddings solve 
-word analogy tasks, though the explanation isn’t quite rigorous.&lt;/p&gt;
-
-&lt;p&gt;In a future post I will talk more about our &lt;a href=&quot;http://arxiv.org/abs/1502.03520&quot;&gt;subsequent theoretical work&lt;/a&gt; that tries to unify these different approaches, and also explains some  cool linear algebraic properties of word
-embeddings. I note that linear structure  also arises in &lt;a href=&quot;http://web.eecs.umich.edu/~honglak/nips2015-analogy.pdf&quot;&gt;representations of images learnt
-via deep learning.&lt;/a&gt;, and it is tantalising to wonder if similar theory applies to that setting.&lt;/p&gt;
-</description>
-        <pubDate>Sat, 12 Dec 2015 01:00:00 -0800</pubDate>
-        <link>http://offconvex.github.io/2015/12/12/word-embeddings-1/</link>
-        <guid isPermaLink="true">http://offconvex.github.io/2015/12/12/word-embeddings-1/</guid>
-      </item>
-     
-    
-     
-      <item>
-        <title>Why go off the convex path?</title>
-        <description>&lt;p&gt;The notion of convexity underlies a lot of beautiful mathematics. When combined with computation, it gives rise to the area of convex optimization that has had a huge impact on understanding and improving the world we live in. However, convexity does not provide all the answers. Many procedures in statistics, machine learning and nature at large—Bayesian inference, deep learning, protein folding—successfully solve non-convex problems that are NP-hard, i.e., intractable on worst-case instances. Moreover, often nature or humans choose methods that are inefficient in the worst case to solve problems in &lt;a href=&quot;https://en.wikipedia.org/wiki/P_(complexity)&quot;&gt;P&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Can we develop a theory to resolve this mismatch between reality and the predictions of worst-case analysis?  Such a theory could identify structure in natural inputs that helps sidestep worst-case complexity.&lt;/p&gt;
-
-&lt;p&gt;This blog is dedicated to the idea that optimization methods—whether created by humans or nature, whether convex or nonconvex—are exciting objects of study and, often lead to useful algorithms and insights into nature. This study can be seen as an extension of classical mathematical fields such as dynamical systems and differential equations among others, but with the important addition of the notion of computational efficiency.&lt;/p&gt;
-
-&lt;p&gt;We will report on interesting research directions and open problems, and highlight progress that has been made. We will write articles ourselves as well as encourage others to contribute. In doing so, we hope to generate an active dialog between theorists, scientists and practitioners and to motivate a generation of young researchers to work on these important problems.&lt;/p&gt;
-</description>
-        <pubDate>Fri, 11 Dec 2015 03:34:00 -0800</pubDate>
-        <link>http://offconvex.github.io/2015/12/11/mission-statement/</link>
-        <guid isPermaLink="true">http://offconvex.github.io/2015/12/11/mission-statement/</guid>
+        <pubDate>Fri, 18 Dec 2015 04:00:00 +1300</pubDate>
+        <link>http://festivalofdoubt.github.io/2015/12/18/tensor-decompositions/</link>
+        <guid isPermaLink="true">http://festivalofdoubt.github.io/2015/12/18/tensor-decompositions/</guid>
       </item>
      
     
