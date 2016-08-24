@@ -8,10 +8,12 @@ visible:    false
 
 ## Matrix derivates
 
-You may have noticed that each function `Softmax, Layer, …` has two methods, `.calc` and `.grad`. This allowed us to evaluate the function, and its gradient at a point. However, this is pointing towards something deeper. 
+Let $y = Wx$ If W is a vector and x is a vector then we have the familiar result that $\frac{\partial y}{\partial W} = x$. Actually, this is wrong. The partial differential should be a matrix,… blah blah. We get away with this because J(x) is diagonal and therefore is the same as element wise multiplication.
 
 
 ## Automatic gradients
+
+You may have noticed that each function `Softmax, Layer, …` has two methods, `.calc` and `.grad`. This allowed us to evaluate the function, and its gradient at a point. However, this is pointing towards something deeper. 
 
 The usual story, but related to the structure of code, which should help make the connection to duals clear?
 
