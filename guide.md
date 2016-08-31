@@ -4,9 +4,9 @@ title: Contributing an article
 permalink: /guide/
 ---
 
-If you're contributing an article, please read these instructions on how to write and post an article on this blog.
+If you're contributing an article, please read these instructions on how to write and post an article on this blog. The blog lives in this [github repository](https://github.com/FestivalOfDoubt/FestivalOfDoubt.github.io)
 
-##Using Markdown
+## Using Markdown
 
 All articles are written in markdown with minimal formatting necessary. To a first approximation your article should simply be a plain text file. Here's the basic template your article should use:
 
@@ -66,9 +66,9 @@ If you need more than what is in the above example, check out this
 You may also use any valid HTML tag in your article, but please try to avoid this.
 
 
-##Submitting an article
+## Submitting an article
 
-The blog lives in this [github repository](https://github.com/FestivalOfDoubt/FestivalOfDoubt.github.io). If you are a regular contributor and your github account has admin access to the repository, you can add an article like this from your command line:
+If you are a regular contributor and your github account has admin access to the repository, you can add an article like this from your command line:
 
 ~~~
 git clone https://github.com/FestivalOfDoubt/FestivalOfDoubt.github.io
